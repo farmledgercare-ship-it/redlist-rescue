@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- App name (working title — rename here and in APP_NAME in app.js) -->
+<title>RedList Rescue — Urgent Shelter Animals Near You</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 64 64" width="52" height="52"><circle cx="32" cy="32" r="30" fill="#c62828"/><path d="M32 47s-14.5-8.6-14.5-19.4C17.5 21.6 21.7 18 26 18c2.6 0 4.9 1.3 6 3.2C33.1 19.3 35.4 18 38 18c4.3 0 8.5 3.6 8.5 9.6C46.5 38.4 32 47 32 47z" fill="#fff"/><circle cx="24" cy="30" r="2.2" fill="#c62828"/><circle cx="40" cy="30" r="2.2" fill="#c62828"/><ellipse cx="32" cy="35" rx="3.4" ry="2.6" fill="#c62828"/></svg>
+    </div>
+    <h1 id="appName">RedList Rescue</h1>
+    <p class="tagline">Every animal here is on a shelter's urgent list — out of time, not out of hope.</p>
+    <p class="hero-sub">Enter your ZIP to see who's running out of time near you.</p>
+
+    <form id="searchForm" class="search" autocomplete="off">
+      <label class="sr-only" for="zipInput">ZIP code</label>
+      <input id="zipInput" inputmode="numeric" pattern="[0-9]*" maxlength="5" placeholder="Your ZIP code" aria-label="ZIP code">
+      <button type="submit" class="btn-primary">Find urgent animals</button>
+    </form>
+
+    <div class="controls">
+      <div class="radius-group" role="group" aria-label="Search radius">
+        <span class="controls-label">Within</span>
+        <button type="button" class="pill radius-pill" data-radius="10">10 mi</button>
+        <button type="button" class="pill radius-pill active" data-radius="25">25 mi</button>
+        <button type="button" class="pill radius-pill" data-radius="50">50 mi</button>
+        <button type="button" class="pill radius-pill" data-radius="100">100 mi</button>
+      </div>
+      <div class="species-group" role="group" aria-label="Species filter">
+        <button type="button" class="pill species-pill active" data-species="all">All</button>
+        <button type="button" class="pill species-pill" data-species="dog">🐶 Dogs</button>
+        <button type="button" class="pill species-pill" data-species="cat">🐱 Cats</button>
+        <button type="button" class="pill species-pill" data-species="other">🐰 Other</button>
+      </div>
+    </div>
+    <p id="searchMsg" class="search-msg" role="status"></p>
+    <div class="submit-cta">
+      <button type="button" id="openSubmit" class="btn-secondary">📣 Saw a red-listed animal posted? Submit it</button>
+    </div>
+    <div class="submit-cta">
+      <a href="#forShelters" class="btn-ghost shelter-link">🏠 Run a shelter? Join free and list your urgent animals →</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="resultsHead" class="results-head hidden">
+    <h2 id="resultsTitle"></h2>
+    <p id="resultsSub" class="results-sub"></p>
+    <button id="clearSearch" type="button" class="btn-ghost">✕ Clear search — browse by ZIP</button>
+  </section>
+
+  <section id="listings" class="listings" aria-live="polite"></section>
+
+  <section id="emptyState" class="empty hidden">
+    <div class="empty-emoji" aria-hidden="true">🌈</div>
+    <h2 id="emptyTitle">No red-listed animals found</h2>
+    <p id="emptyText">Try a wider radius — an extra few miles can save a life.</p>
+  </section>
+</main>
+
+<!-- Detail overlay -->
+<div id="detailOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="detailName">
+  <div class="detail-card">
+    <button id="detailClose" class="detail-close" aria-label="Close">✕</button>
+    <div id="detailBody"></div>
+  </div>
+</div>
+
+<!-- Submit-a-listing overlay (community intake, e.g. Facebook group posts) -->
+<div id="submitOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="submitTitle">
+  <div class="detail-card submit-card">
+    <button id="submitClose" class="detail-close" aria-label="Close">✕</button>
+    <div class="submit-inner">
+      <h2 id="submitTitle">Submit a red-listed animal</h2>
+      <p class="submit-note">Saw an urgent animal posted in a Facebook rescue group or on a shelter page? Add it here so more people see it. In this demo your listing appears right away — <strong>in the live version, community submissions are reviewed before going fully public.</strong></p>
+      <form id="submitForm" class="submit-form" autocomplete="off">
+        <label>Animal's name *
+          <input id="fName" required maxlength="60" placeholder="e.g. Bella">
+        </label>
+        <label>Species *
+          <select id="fSpecies" required>
+            <option value="dog">🐶 Dog</option>
+            <option value="cat">🐱 Cat</option>
+            <option value="other">🐰 Other</option>
+          </select>
+        </label>
+        <label>Breed
+          <input id="fBreed" maxlength="80" placeholder="e.g. Pit Bull mix">
+        </label>
+        <label>Shelter or poster
+          <input id="fShelter" maxlength="100" placeholder="Shelter name, or who posted it">
+        </label>
+        <div class="form-row">
+          <label>City *
+            <input id="fCity" required maxlength="60" placeholder="City">
+          </label>
+          <label>State *
+            <input id="fState" required maxlength="2" placeholder="MN">
+          </label>
+          <label>ZIP *
+            <input id="fZip" required inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="55901">
+          </label>
+        </div>
+        <label>Deadline date (optional)
+          <input id="fDeadline" type="date">
+        </label>
+        <label>Link to the post *
+          <input id="fLink" required type="url" maxlength="300" placeholder="https://www.facebook.com/…">
+        </label>
+        <button type="submit" class="btn-primary submit-btn">Add this listing</button>
+        <p id="submitMsg" class="search-msg" role="status"></p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<section id="forShelters" class="for-shelters">
+  <h2>For Shelters — get your red-listed animals seen</h2>
+  <p class="coverage-intro">RedList Rescue is <strong>free for shelters</strong>, always. It exists for one thing: putting the animals with the least time left in front of the adopters, rescues, and fosters nearby. Create an account and add your animals yourself — every listing carries a live deadline countdown, so nobody has to guess who's most urgent.</p>
+  <ul class="pitch-list">
+    <li>🚨 <strong>Only red-listed animals</strong> — your most urgent cases aren't buried under thousands of regular listings.</li>
+    <li>⏰ <strong>Deadline countdowns</strong> on every animal you add.</li>
+    <li>📍 <strong>Found by ZIP</strong> — nearby adopters, rescues, and fosters see your animals first.</li>
+    <li>✅ Shelters are <strong>verified before their listings are featured</strong> — in this demo, new partners appear right away with a “Partner — pending verification” badge.</li>
+  </ul>
+  <div id="shelterActions" class="shelter-actions"></div>
+  <p class="demo-note">Demo accounts live only for this session (nothing is stored or sent anywhere) until the live backend connects.</p>
+</section>
+
+<section id="support" class="support">
+  <h2>Support RedList Rescue</h2>
+  <p class="coverage-intro">Two separate ways to help — pick either (or both). Every dollar is accounted for plainly, below.</p>
+  <div class="support-grid">
+    <div class="support-card">
+      <h3>❤️ Help keep RedList Rescue running</h3>
+      <p>Donations toward the site's and app's running costs — hosting, the app store fees, and keeping the listings up to date — so the animals here stay visible.</p>
+      <div class="donate-amounts" role="group" aria-label="Choose an amount">
+        <button type="button" class="pill donate-amount" data-path="site" data-amount="5">$5</button>
+        <button type="button" class="pill donate-amount" data-path="site" data-amount="10">$10</button>
+        <button type="button" class="pill donate-amount" data-path="site" data-amount="25">$25</button>
+        <button type="button" class="pill donate-amount" data-path="site" data-amount="50">$50</button>
+      </div>
+      <div id="donateActionSite" class="donate-action"></div>
+    </div>
+    <div class="support-card">
+      <h3>🐱 Donate toward local TNR</h3>
+      <p>Trap-neuter-return for feral and community cats in the SE Minnesota area — the humane way to stop the next generation of kittens from ending up on a list like this one. Recipient: <strong id="tnrRecipient">a local TNR program — recipient to be named at launch</strong>.</p>
+      <div class="donate-amounts" role="group" aria-label="Choose an amount">
+        <button type="button" class="pill donate-amount" data-path="tnr" data-amount="5">$5</button>
+        <button type="button" class="pill donate-amount" data-path="tnr" data-amount="10">$10</button>
+        <button type="button" class="pill donate-amount" data-path="tnr" data-amount="25">$25</button>
+        <button type="button" class="pill donate-amount" data-path="tnr" data-amount="50">$50</button>
+      </div>
+      <div id="donateActionTnr" class="donate-action"></div>
+    </div>
+  </div>
+  <p class="honesty-note">Please read before donating: RedList Rescue is <strong>not a registered nonprofit</strong>, so donations are <strong>not tax-deductible</strong>. Donations to keep RedList Rescue running go to Sami / RedList Rescue and are used for the site's and app's running costs. TNR donations are passed through in full to the named local TNR effort above.</p>
+</section>
+
+<!-- Shelter account overlay (sign up / sign in) — demo, in-memory only -->
+<div id="authOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+  <div class="detail-card submit-card">
+    <button id="authClose" class="detail-close" aria-label="Close">✕</button>
+    <div class="submit-inner">
+      <h2 id="authTitle">Join RedList Rescue</h2>
+      <p class="submit-note">Create a free shelter account to add your red-listed animals yourself. New shelters show as “Partner — pending verification” — we verify every shelter before its listings are featured.</p>
+
+      <form id="signUpForm" class="submit-form" autocomplete="off">
+        <label>Shelter name *
+          <input id="sName" required maxlength="100" placeholder="e.g. Happy Tails Animal Shelter">
+        </label>
+        <label>Contact person *
+          <input id="sContact" required maxlength="80" placeholder="Your name">
+        </label>
+        <label>Work email *
+          <input id="sEmail" required type="email" maxlength="120" placeholder="you@yourshelter.org">
+        </label>
+        <label>Password *
+          <input id="sPassword" required type="password" minlength="6" maxlength="100" placeholder="Demo only — don't reuse a real password">
+        </label>
+        <div class="form-row">
+          <label>City *
+            <input id="sCity" required maxlength="60" placeholder="City">
+          </label>
+          <label>State *
+            <input id="sState" required maxlength="2" placeholder="MN">
+          </label>
+          <label>ZIP *
+            <input id="sZip" required inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="55901">
+          </label>
+        </div>
+        <label>Shelter website
+          <input id="sWebsite" maxlength="120" placeholder="yourshelter.org">
+        </label>
+        <label>How do you share your urgent animals now?
+          <select id="sShare">
+            <option value="website">Our own website</option>
+            <option value="petfinder">Petfinder</option>
+            <option value="facebook">Facebook</option>
+            <option value="none">We don't publish a list yet</option>
+          </select>
+        </label>
+        <label class="check-label">
+          <input id="sAuthorized" type="checkbox" required>
+          <span>I confirm I'm authorized to list animals for this shelter.</span>
+        </label>
+        <button type="submit" class="btn-primary submit-btn">Create shelter account</button>
+        <p id="signUpMsg" class="search-msg" role="status"></p>
+        <p class="auth-switch">Already have an account? <button type="button" id="toSignIn" class="btn-ghost">Sign in</button></p>
+      </form>
+
+      <form id="signInForm" class="submit-form hidden" autocomplete="off">
+        <label>Email *
+          <input id="iEmail" required type="email" maxlength="120" placeholder="you@yourshelter.org">
+        </label>
+        <label>Password *
+          <input id="iPassword" required type="password" maxlength="100">
+        </label>
+        <button type="submit" class="btn-primary submit-btn">Sign in</button>
+        <p id="signInMsg" class="search-msg" role="status"></p>
+        <p class="auth-switch">New here? <button type="button" id="toSignUp" class="btn-ghost">Join as a shelter</button></p>
+      </form>
+
+      <p class="demo-note">Demo accounts live only for this session — refresh the page and they're gone, until the live backend connects.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Shelter dashboard ("My Shelter") -->
+<div id="dashOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="dashTitle">
+  <div class="detail-card dash-card">
+    <button id="dashClose" class="detail-close" aria-label="Close">✕</button>
+    <div class="submit-inner">
+      <h2 id="dashTitle">My Shelter</h2>
+      <div id="dashBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add / edit animal overlay (partner shelters) -->
+<div id="animalOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="animalTitle">
+  <div class="detail-card submit-card">
+    <button id="animalClose" class="detail-close" aria-label="Close">✕</button>
+    <div class="submit-inner">
+      <h2 id="animalTitle">Add a red-listed animal</h2>
+      <p class="submit-note">This animal appears right away in the public listings, labeled “Shelter submitted” under your shelter's name, with a deadline countdown.</p>
+      <form id="animalForm" class="submit-form" autocomplete="off">
+        <input type="hidden" id="aId">
+        <label>Animal's name *
+          <input id="aName" required maxlength="60" placeholder="e.g. Bella">
+        </label>
+        <div class="form-row-2">
+          <label>Type *
+            <select id="aSpecies" required>
+              <option value="dog">🐶 Dog</option>
+              <option value="cat">🐱 Cat</option>
+              <option value="other">🐰 Other</option>
+            </select>
+          </label>
+          <label>Breed
+            <input id="aBreed" maxlength="80" placeholder="e.g. Pit Bull mix">
+          </label>
+        </div>
+        <div class="form-row-2">
+          <label>Sex
+            <select id="aSex">
+              <option value="Female">Female</option>
+              <option value="Male">Male</option>
+              <option value="Unknown">Unknown</option>
+            </select>
+          </label>
+          <label>Age group
+            <select id="aAge">
+              <option value="Puppy/Kitten">Puppy / Kitten</option>
+              <option value="Young">Young</option>
+              <option value="Adult" selected>Adult</option>
+              <option value="Senior">Senior</option>
+            </select>
+          </label>
+        </div>
+        <label>Deadline date
+          <input id="aDeadline" type="date">
+        </label>
+        <label>About this animal
+          <textarea id="aNotes" rows="4" maxlength="1200" placeholder="Personality, who's a good match, medical or behavior notes — anything that helps them get chosen."></textarea>
+        </label>
+        <label>Photo
+          <input id="aPhoto" type="file" accept="image/*">
+        </label>
+        <div id="aPhotoPreview" class="photo-preview hidden"><img id="aPhotoImg" alt="Photo preview of the animal"></div>
+        <button type="submit" class="btn-primary submit-btn">Save animal</button>
+        <p id="animalMsg" class="search-msg" role="status"></p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<section id="coverage" class="coverage">
+  <h2>Coverage — shelters we track</h2>
+  <p class="coverage-intro">We're building toward every shelter in every town and county that publishes an urgent list — <strong><span id="coverageCount">0</span> shelters</strong> in the registry so far — and urgent listings shared in Facebook rescue groups, where many red-listed animals are posted first. More shelters are added county by county — tell us which shelter to add next.</p>
+  <div id="coverageList"></div>
+</section>
+
+<footer>
+  <p><strong>About:</strong> <span id="appNameFoot">RedList Rescue</span> lists only animals on shelter urgent / euthanasia lists, so the ones with the least time get seen first. If you can foster, adopt, or even just share a listing — it matters.</p>
+  <p><a href="#support">❤️ Support RedList Rescue — donate toward running costs or local TNR</a></p>
+  <p class="demo-note">Demo listings — live shelter data connects via RescueGroups.org and shelter urgent-list feeds.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
