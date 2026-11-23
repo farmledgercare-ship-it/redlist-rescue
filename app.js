@@ -3120,30 +3120,36 @@ function closeAuth() {
 
 /* Email a shelter/rescue join request to Sami (via FormSubmit) so the
    request survives the demo session and she can verify the partner.
-   The account password is NEVER included. */
+   The account password is NEVER included.
+   Sent as a classic form-encoded POST with mode:"no-cors": FormSubmit
+   processes it reliably, and a resolved fetch means the request reached
+   them (their AJAX JSON response can't be read cross-origin, which made
+   the old JSON version report failure even when the email was delivered). */
 async function sendJoinRequest(account) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 20000);
   try {
-    const res = await fetch("https://formsubmit.co/ajax/redlistrescue.mn@gmail.com", {
+    const body = new URLSearchParams({
+      _subject: `RedList Rescue join request — ${account.shelterName}`,
+      _template: "table",
+      "Shelter / rescue": account.shelterName,
+      "Contact person": account.contact,
+      Email: account.email,
+      City: account.city,
+      State: account.state,
+      ZIP: account.zip,
+      Website: account.website || "—",
+      "How they share urgent animals": account.shareMethod,
+    });
+    await fetch("https://formsubmit.co/redlistrescue.mn@gmail.com", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({
-        _subject: `RedList Rescue join request — ${account.shelterName}`,
-        _template: "table",
-        "Shelter / rescue": account.shelterName,
-        "Contact person": account.contact,
-        Email: account.email,
-        City: account.city,
-        State: account.state,
-        ZIP: account.zip,
-        Website: account.website || "—",
-        "How they share urgent animals": account.shareMethod,
-      }),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+      mode: "no-cors",
       signal: ctrl.signal,
     });
     clearTimeout(timer);
-    return res.ok;
+    return true;
   } catch {
     clearTimeout(timer);
     return false;
