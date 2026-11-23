@@ -3125,7 +3125,7 @@ async function sendJoinRequest(account) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 6000);
   try {
-    const res = await fetch("https://formsubmit.co/ajax/farmledgercare@gmail.com", {
+    const res = await fetch("https://formsubmit.co/ajax/redlistrescue.mn@gmail.com", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
@@ -3199,7 +3199,7 @@ async function handleSignUp(e) {
   closeAuth();
   renderCoverage();
   renderShelterActions();
-  openDashboard(`🎉 Welcome to RedList Rescue, ${account.shelterName}! Your shelter is in the registry as a partner — pending verification. ${requestSent ? `Your join request was also emailed to the RedList Rescue team — we'll reach out at ${account.email} when you're verified.` : "We couldn't email your join request just now — please also email farmledgercare@gmail.com so we can verify you."} Add your first red-listed animal below.`);
+  openDashboard(`🎉 Welcome to RedList Rescue, ${account.shelterName}! Your shelter is in the registry as a partner — pending verification. ${requestSent ? `Your join request was also emailed to the RedList Rescue team — we'll reach out at ${account.email} when you're verified.` : "We couldn't email your join request just now — please also email redlistrescue.mn@gmail.com so we can verify you."} Add your first red-listed animal below.`);
 }
 
 function handleSignIn(e) {
