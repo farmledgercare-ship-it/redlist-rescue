@@ -3123,7 +3123,7 @@ function closeAuth() {
    The account password is NEVER included. */
 async function sendJoinRequest(account) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 6000);
+  const timer = setTimeout(() => ctrl.abort(), 20000);
   try {
     const res = await fetch("https://formsubmit.co/ajax/redlistrescue.mn@gmail.com", {
       method: "POST",
