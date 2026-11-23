@@ -3118,38 +3118,41 @@ function closeAuth() {
   if ($("dashOverlay").classList.contains("hidden")) document.body.style.overflow = "";
 }
 
-/* Email a shelter/rescue join request to Sami (via FormSubmit) so the
+/* Email a shelter/rescue join request to Sami (via Web3Forms) so the
    request survives the demo session and she can verify the partner.
    The account password is NEVER included.
-   Sent as a classic form-encoded POST with mode:"no-cors": FormSubmit
-   processes it reliably, and a resolved fetch means the request reached
-   them (their AJAX JSON response can't be read cross-origin, which made
-   the old JSON version report failure even when the email was delivered). */
+   Web3Forms delivers to redlistrescue.mn@gmail.com (the access key below
+   is a public form key — it only lets this form send mail TO that inbox)
+   and returns a readable JSON result, so success here means Web3Forms
+   actually accepted the submission. (FormSubmit was retired Nov 23, 2026:
+   its AJAX response was unreadable cross-origin and its classic endpoint
+   silently dropped fetch posts.) */
 async function sendJoinRequest(account) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 20000);
   try {
-    const body = new URLSearchParams({
-      _subject: `RedList Rescue join request — ${account.shelterName}`,
-      _template: "table",
-      "Shelter / rescue": account.shelterName,
-      "Contact person": account.contact,
-      Email: account.email,
-      City: account.city,
-      State: account.state,
-      ZIP: account.zip,
-      Website: account.website || "—",
-      "How they share urgent animals": account.shareMethod,
-    });
-    await fetch("https://formsubmit.co/redlistrescue.mn@gmail.com", {
+    const res = await fetch("https://api.web3forms.com/submit", {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
-      mode: "no-cors",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        access_key: "6472bd58-a10e-4698-99c6-f25db0b580c7",
+        subject: `RedList Rescue join request — ${account.shelterName}`,
+        from_name: "RedList Rescue website",
+        "Shelter / rescue": account.shelterName,
+        "Contact person": account.contact,
+        Email: account.email,
+        City: account.city,
+        State: account.state,
+        ZIP: account.zip,
+        Website: account.website || "—",
+        "How they share urgent animals": account.shareMethod,
+      }),
       signal: ctrl.signal,
     });
     clearTimeout(timer);
-    return true;
+    if (!res.ok) return false;
+    const data = await res.json().catch(() => null);
+    return !!(data && data.success);
   } catch {
     clearTimeout(timer);
     return false;
