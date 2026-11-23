@@ -941,7 +941,39 @@ function closeAuth() {
   if ($("dashOverlay").classList.contains("hidden")) document.body.style.overflow = "";
 }
 
-function handleSignUp(e) {
+/* Email a shelter/rescue join request to Sami (via FormSubmit) so the
+   request survives the demo session and she can verify the partner.
+   The account password is NEVER included. */
+async function sendJoinRequest(account) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 6000);
+  try {
+    const res = await fetch("https://formsubmit.co/ajax/farmledgercare@gmail.com", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        _subject: `RedList Rescue join request — ${account.shelterName}`,
+        _template: "table",
+        "Shelter / rescue": account.shelterName,
+        "Contact person": account.contact,
+        Email: account.email,
+        City: account.city,
+        State: account.state,
+        ZIP: account.zip,
+        Website: account.website || "—",
+        "How they share urgent animals": account.shareMethod,
+      }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    return res.ok;
+  } catch {
+    clearTimeout(timer);
+    return false;
+  }
+}
+
+async function handleSignUp(e) {
   e.preventDefault();
   const email = $("sEmail").value.trim().toLowerCase();
   if (ACCOUNTS.some((a) => a.email === email)) {
@@ -984,11 +1016,13 @@ function handleSignUp(e) {
     partner: true,
   });
   authSession.accountId = account.id;
-  e.target.reset();
+  const form = e.target;
+  const requestSent = await sendJoinRequest(account);
+  form.reset();
   closeAuth();
   renderCoverage();
   renderShelterActions();
-  openDashboard(`🎉 Welcome to RedList Rescue, ${account.shelterName}! Your shelter is in the registry as a partner — pending verification. Add your first red-listed animal below.`);
+  openDashboard(`🎉 Welcome to RedList Rescue, ${account.shelterName}! Your shelter is in the registry as a partner — pending verification. ${requestSent ? `Your join request was also emailed to the RedList Rescue team — we'll reach out at ${account.email} when you're verified.` : "We couldn't email your join request just now — please also email farmledgercare@gmail.com so we can verify you."} Add your first red-listed animal below.`);
 }
 
 function handleSignIn(e) {
