@@ -44,7 +44,15 @@ const API_CONFIG = {
    no network calls.
    ------------------------------------------------------------ */
 const DONATE_LINKS = {
-  siteLink: "", // TODO: Stripe Payment Link for "keep RedList Rescue running"
+  // "Keep RedList Rescue running" — one Stripe donate link per preset
+  // amount (created Nov 24, 2026; product prod_VgsV04C0ihsvW1 on Sami's
+  // Stripe account; cards + Google Pay on Stripe's hosted page).
+  siteLinks: {
+    5: "https://donate.stripe.com/14AeVdb1ldAT8kvdc56kg0e",
+    10: "https://donate.stripe.com/eVqcN58TddATasDdc56kg0f",
+    25: "https://donate.stripe.com/fZudR94CXdATbwH6NH6kg0g",
+    50: "https://donate.stripe.com/6oU7sLedx68r6cnb3X6kg0h",
+  },
   tnrLink: "",  // TODO: Stripe Payment Link for local TNR donations
 };
 
@@ -4528,7 +4536,7 @@ const donateAmounts = { site: 25, tnr: 25 }; // currently chosen preset per path
 function renderDonateAction(path) {
   const el = $(path === "site" ? "donateActionSite" : "donateActionTnr");
   if (!el) return;
-  const link = path === "site" ? DONATE_LINKS.siteLink : DONATE_LINKS.tnrLink;
+  const link = path === "site" ? DONATE_LINKS.siteLinks[donateAmounts[path]] : DONATE_LINKS.tnrLink;
   if (!link) {
     el.innerHTML = `<button type="button" class="btn-primary donate-btn" disabled>Donations open at launch</button>`;
   } else {
